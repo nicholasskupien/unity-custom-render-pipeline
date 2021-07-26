@@ -9,6 +9,6 @@ public class CustomRenderPipelineAsset : RenderPipelineAsset{
     //To get a pipeline object instance we need to override the abstract CreatePipeline to return a RenderPipeline instance
     //CreatePipeline is defined with the protected access modifier which means that only the class that defined the method (and who extend it) can access it
     protected override RenderPipeline CreatePipeline () {
-        return null;
+        return new CustomRenderPipeline();
     }
 }
