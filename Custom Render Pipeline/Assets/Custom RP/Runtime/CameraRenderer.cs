@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 //class responsible for rendering a camera
-public class CameraRenderer {
+public partial class CameraRenderer {
 
     ScriptableRenderContext context;
 
@@ -25,12 +25,17 @@ public class CameraRenderer {
         this.context = context;
         this.camera = camera;
 
+        PrepareBuffer();
+        PrepareForSceneWindow();
+
         if (!Cull()) {
 			return;
 		}
 
         Setup();
         DrawVisibleGeometry();
+		DrawUnsupportedShaders();
+        DrawGizmos();
         Submit();
     }
 
@@ -42,13 +47,13 @@ public class CameraRenderer {
         //need to guaruntee what we are rendering to. This could have been a render texture in a previous frame
         buffer.ClearRenderTarget(true, true, Color.clear); //clears depth and colour data (true) with Color.clear
         
-        buffer.BeginSample(bufferName);
+        buffer.BeginSample(SampleName);
         ExecuteBuffer();
     }
 
     //commands we issue to context are buffered, so we need to submit the queued work for execution
     void Submit () {
-        buffer.EndSample(bufferName);
+        buffer.EndSample(SampleName);
         ExecuteBuffer();
         context.Submit();
     }
@@ -67,14 +72,25 @@ public class CameraRenderer {
         var drawingSettings = new DrawingSettings(
             unlitShaderTagId, sortingSettings
         );
+
         //need to indicate which render queues are allowed
-        var filteringSettings = new FilteringSettings(RenderQueueRange.all);
+        var filteringSettings = new FilteringSettings(RenderQueueRange.opaque);
 
         context.DrawRenderers(
             cullingResults, ref drawingSettings, ref filteringSettings
         );
 
         context.DrawSkybox(camera);
+
+        //now draw the transparent geometry
+        sortingSettings.criteria = SortingCriteria.CommonTransparent;
+        drawingSettings.sortingSettings = sortingSettings;
+        filteringSettings.renderQueueRange = RenderQueueRange.transparent;
+
+        context.DrawRenderers(
+            cullingResults, ref drawingSettings, ref filteringSettings
+        );
+
     }
 
     //figuring out what is cullable
