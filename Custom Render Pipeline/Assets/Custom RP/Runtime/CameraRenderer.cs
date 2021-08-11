@@ -43,9 +43,19 @@ public partial class CameraRenderer {
     void Setup () {
         //setup camera context first so that we get efficient clear
         context.SetupCameraProperties(camera);
+
+        //get the camera clear flags properties from the camera
+        //values from 1 to 4 (Skybox, Color, Depth, Nothing)
+        CameraClearFlags flags = camera.clearFlags;
         
         //need to guaruntee what we are rendering to. This could have been a render texture in a previous frame
-        buffer.ClearRenderTarget(true, true, Color.clear); //clears depth and colour data (true) with Color.clear
+        buffer.ClearRenderTarget(
+            //Depth buffer has to be cleared in all cases but 'Nothing'
+            flags <= CameraClearFlags.Depth,
+            //We only need to clear the colour buffer when the flags are set to colour 
+            flags == CameraClearFlags.Color,
+            //When clearing we either use the cameras background colour (when clearing to a colour) or use the clear colour
+            flags == CameraClearFlags.Color ? camera.backgroundColor.linear : Color.clear); //clears depth and colour data (true) with Color.clear
         
         buffer.BeginSample(SampleName);
         ExecuteBuffer();
